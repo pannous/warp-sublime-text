@@ -9,7 +9,7 @@ WARP=${1:-$HOME/dev/angles/warp}
 PACKAGE=${0:A:h:h}
 GENERATED=(Warp.sublime-syntax Warp.sublime-completions)
 LAST_FAILURE=$HOME/.cache/sublime-words.last-failure
-TODO=$HOME/dev/bin/todo
+TODO=${TODO:-$HOME/dev/bin/todo}  # overridable to test the failure path
 
 fail() {
 	local reason=$1
