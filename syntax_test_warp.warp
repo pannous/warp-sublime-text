@@ -225,7 +225,7 @@ nums where it > 2
 #          ^^ variable.language.warp
 
 effects of f; p.fields; undo x
-# <- keyword.operator.word.warp
+# <- keyword.other.soft.warp
 #               ^^^^^^ keyword.other.soft.warp
 #                       ^^^^ keyword.other.soft.warp
 

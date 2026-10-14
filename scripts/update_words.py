@@ -3,14 +3,17 @@
 
 warp (the Rust implementation of wasp) keeps its keywords, word operators, built-in functions, types and units in
 tables scattered over src/: constants, match arms and parser calls. SOURCES names them per syntax scope; this script
-reads them, keeps the words a warp program can write, and rewrites the GENERATED block of the syntax's variables and
-the completions file. A source that no longer exists is a loud error: warp moved a table and SOURCES must follow.
-Two more loud errors keep the lists honest: a hard or soft keyword of P165 (src/lowering/soft_keywords.rs) that no
+finds each by its name anywhere under the Rust roots (so moving a table to another file needs no change here), keeps
+the words a warp program can write, and rewrites the GENERATED block of the syntax's variables and the completions
+file. A name defined nowhere, or in several places with different contents, is a loud error: qualify it with a module
+or folder name of its path (`time::unit_named`) or rename it in SOURCES.
+Two more loud errors keep the lists honest: a hard or soft keyword of P165 (SOFT_KEYWORDS, HARD_KEYWORDS) that no
 scope colors, and a keyword word that wiki/keyword.md does not document.
 
 usage: scripts/update_words.py [path to warp checkout] [keyword page]
        (defaults ~/dev/angles/warp and the wiki of the main checkout: worktrees have no wiki/)
 """
+import functools
 import json
 import re
 import sys
@@ -33,103 +36,77 @@ RUST_ROOTS = ["src", "crates/*/src"]
 EXCLUDED = {"main", "fetch", "fd_write", "puti", "putl", "putf",
             "C", "a", "an", "the", "number", "_", "st", "run_block", "foreign_call", "map_entries"}
 
-# Each source: (file in warp, constant name[, "first" | "rest": the first word of each tuple/struct element | the others])
-#              ("fn", file, function name): the string and char literals of that function's body
-#              ("calls", directory, function name): the literal arguments of calls to that function
+# Names are found anywhere under RUST_ROOTS; `module::name` keeps only definitions whose path has that folder or file
+# Each source: constant name, or (constant name, "first" | "rest"): the first word of each tuple/struct element | the others
+#              ("fn", function name): the string and char literals of that function's body
+#              ("calls", function name): the literal arguments of calls to that function
 #              ("words", word, …): words with no table in warp, kept only while they are a literal in warp's sources
 #              ("page", section): the words and aliases of that section's table in wiki/keyword.md (KEYWORD_PAGE),
 #              for contextual words warp matches inline, without a table to read
 SOURCES = {
-	"constant_language": [("fn", "src/warp_parser/mod.rs", "check_constants"), ("words", "∞"), ("page", "Constants")],
+	"constant_language": [("fn", "warp_parser::check_constants"), ("words", "∞"), ("page", "Constants")],
 	# implicit names: before the types, which list `result` too
 	"variable_language": [
-		("src/warp_parser/mod.rs", "IT_WORD"), ("src/warp_parser/mod.rs", "RECEIVER_WORD"),
-		("src/lowering/class_methods.rs", "RECEIVER_ALIASES"), ("src/lowering/class_methods.rs", "SUPER"),
-		("src/lowering/result_word.rs", "RESULT_WORD"), ("page", "Implicit names"),
+		"IT_WORD", "RECEIVER_WORD", "RECEIVER_ALIASES", "SUPER", "RESULT_WORD", ("page", "Implicit names"),
 	],
 	"keyword_control": [
-		("src/warp_parser/mod.rs", "STATEMENT_MODIFIERS", "first"), ("src/warp_parser/mod.rs", "ELSE_IF_WORDS"),
-		("src/warp_parser/mod.rs", "FALLBACK_WORDS"), ("src/warp_parser/mod.rs", "UNINDEXABLE_KEYWORDS"),
-		("src/warp_parser/mod.rs", "END_KEYWORD"), ("src/warp_parser/mod.rs", "AWAIT_KEYWORD"),
-		("src/analyzer/mod.rs", "RETURNING_KEYWORDS"), ("src/lowering/switch.rs", "SWITCH_WORDS"),
-		("src/lowering/switch.rs", "DEFAULT_KEYS"), ("src/lowering/declarations.rs", "TASK_WORDS"),
-		("src/pipeline.rs", "RAISE_WORDS"), ("src/warp_parser/mod.rs", "FINALLY_KEYWORD"),
-		("words", "for", "loop", "break", "continue", "try", "case", "once", "assert", "with"), ("page", "Control flow"),
+		"ELSE_IF_WORDS", "FALLBACK_WORDS", "UNINDEXABLE_KEYWORDS", "END_KEYWORD", "AWAIT_KEYWORD",
+		"RETURNING_KEYWORDS", "SWITCH_WORDS", "DEFAULT_KEYS", "tasks::TASK_WORDS", "RAISE_WORDS", "FINALLY_KEYWORD",
+		("words", "if", "unless", "while", "until", "for", "loop", "break", "continue", "try", "case", "once", "assert", "with"), ("page", "Control flow"),
 	],
-	"keyword_function": [("src/operators.rs", "FUNCTION_KEYWORDS")],
+	"keyword_function": ["FUNCTION_KEYWORDS"],
 	"keyword_declaration": [
-		("src/warp_parser/mod.rs", "TYPE_DECLARATION_WORDS"),
-		("src/warp_parser/mod.rs", "RECORD_WORD"), ("src/lowering/traits.rs", "TRAIT_KEYWORDS"), ("words", "enum", "data"),
+		"TYPE_DECLARATION_WORDS",
+		"RECORD_WORD", "TRAIT_KEYWORDS", ("words", "enum", "data"),
 	],
-	"keyword_import": [("src/modules.rs", "USE_KEYWORDS"), ("src/warp_parser/mod.rs", "HASH_DIRECTIVES")],
+	"keyword_import": ["USE_KEYWORDS", "INCLUDE_KEYWORD"],
 	"storage_modifier": [
-		("src/warp_parser/mod.rs", "DEFINITION_MODIFIERS"), ("src/warp_parser/mod.rs", "DECLARATION_MODIFIERS"),
-		("src/modules.rs", "DECLARATION_KEYWORDS"), ("src/analyzer/mod.rs", "CONSTANT_KEYWORDS"),
-		("src/warp_parser/mod.rs", "NONLOCAL_WORD"), ("src/lowering/shared_arrays.rs", "SHARED_WORDS"),
-		("src/warp_parser/mod.rs", "FOREIGN_MODIFIERS"), ("page", "Modifiers"),
+		"DEFINITION_MODIFIERS", "DECLARATION_MODIFIERS", "DECLARATION_KEYWORDS", "CONSTANT_KEYWORDS",
+		"NONLOCAL_WORD", "shared_arrays::SHARED_WORDS", "FOREIGN_MODIFIERS", ("page", "Modifiers"),
 	],
 	"keyword_operator_word": [
-		("fn", "src/operators.rs", "as_str"), ("calls", "src/warp_parser", "matches_keyword"),
-		("src/operators.rs", "GLYPH_OPERATORS"), ("src/warp_parser/mod.rs", "NAND_SPELLINGS"),
-		("src/warp_parser/mod.rs", "SIMILARITY_WORDS"), ("src/warp_parser/mod.rs", "IS_WORD"),
-		("src/warp_parser/mod.rs", "UPTO"), ("src/warp_parser/mod.rs", "TIMES_WORD"), ("src/warp_parser/mod.rs", "TEST_WORDS"),
-		("src/warp_parser/mod.rs", "EVEN_WORD"), ("src/warp_parser/mod.rs", "ODD_WORD"), ("src/effects.rs", "QUERY_WORDS"),
-		("src/lowering/run_time_blocks.rs", "INTERPRET"), ("words", "mod", "rem", "div", "of", "by", "has", "contains"), ("page", "Operators as words"),
+		("fn", "as_str"), ("calls", "matches_keyword"),
+		("OPERATOR_SPELLINGS", "first"), ("NEGATED_SPELLINGS", "first"), "IS_WORD",
+		"UPTO", "TIMES_WORD", "TEST_WORDS", "EVEN_WORD", "ODD_WORD",
+		"INTERPRET", ("words", "mod", "rem", "div", "of", "by", "has", "contains"), ("page", "Operators as words"),
 	],
 	"storage_type": [
-		("fn", "src/analyzer/checks.rs", "builtin_type_kind"), ("src/warp_parser/mod.rs", "LITERAL_NUMBER_TYPES"),
-		("src/warp_parser/mod.rs", "GENERIC_TYPE_HEADS"), ("src/real.rs", "TEXT_TYPES"),
-		("src/lowering/traits.rs", "BUILTIN_COMPARABLE"), ("src/analyzer/checks.rs", "MAP_TYPE"),
+		("fn", "builtin_type_kind"), "BUILTIN_TYPES", "GENERIC_TYPE_HEADS", "BUILTIN_COMPARABLE", "MAP_TYPE",
 		("words", "number", "bool", "byte", "char", "symbol", "node", "any", "list", "rational", "complex", "duration",
 		 "date", "error", "u8", "u16", "u32", "u64", "i8", "i16"),
 	],
 	# the user-facing library: every word of these tables is one a program writes
 	"support_function": [
-		("src/lowering/library_words.rs", "SYNONYMS", "rest"), ("src/lowering/library_words.rs", "LOG_WORD"),
-		("src/lowering/library_words.rs", "SUM"), ("src/lowering/library_words.rs", "COUNT_WORD"),
-		("src/lowering/lambdas.rs", "ITERATIONS", "first"), ("src/lowering/function_values.rs", "ITERATION_WORDS"),
-		("src/lowering/min_max.rs", "EMPTY_LIST_ERRORS", "first"),
-		("src/real.rs", "FUNCTIONS"), ("src/host.rs", "HOST_ALIASES", "first"), ("src/lowering/closures.rs", "APPEND_METHODS"),
-		("src/lowering/foreign_modules.rs", "COUNTING_WORDS"), ("src/analyzer/mod.rs", "PROPERTYLESS_KEYWORDS"),
-		("src/warp_parser/mod.rs", "HEX_WORD"),
+		("SYNONYMS", "rest"), "LOG_WORD", "SUM_WORD", "COUNT_WORD", ("ITERATIONS", "first"), "ITERATION_WORDS",
+		("EMPTY_LIST_ERRORS", "first"), "FUNCTIONS", ("HOST_ALIASES", "first"), "APPEND_METHODS",
+		"COUNTING_WORDS", "PROPERTYLESS_KEYWORDS", ("RADIXES", "first"), "BINARY_ALIAS",
 		("words", "now", "range", "len", "length", "size", "min", "max", "abs", "sqrt", "print", "println", "puts",
 		 "exit", "read", "round", "pop", "insert", "remove", "keys", "values", "items"),
 	],
 	# tables of the emitter and the host that mix library words with internal runtime names: a word of these
 	# counts as a built-in only where tests, samples or the wiki call it (USAGE_CORPUS)
 	"runtime_tables": [
-		("src/lowering/library_words.rs", "SYNONYMS", "first"), ("src/wasm_emitter/mod.rs", "ROUNDING_FUNCTIONS"),
-		("src/lowering/library_words.rs", "RUNTIME_WORDS", "first"), ("src/lowering/library_words.rs", "EXPANDED_WORDS", "first"),
-		("src/wasm_emitter/text_builtins.rs", "TEXT_BUILTINS", "first"), ("src/wasm_emitter/list_emitter.rs", "BUILTIN_CALLS"),
-		("src/host.rs", "HOST_WORDS"),
+		("SYNONYMS", "first"), "ROUNDING_FUNCTIONS", ("RUNTIME_WORDS", "first"), ("EXPANDED_WORDS", "first"),
+		("TEXT_BUILTINS", "first"), "BUILTIN_CALLS", "HOST_WORDS",
 	],
-	"time_units": [("fn", "src/time/calendar.rs", "unit_named")],
-	"units": [("src/units.rs", "UNITS", "first"), ("src/units.rs", "LONG_NAMES", "first"), ("src/warp_parser/mod.rs", "UNIT_LOOP_WORDS")],
+	"time_units": [("fn", "time::unit_named")],
+	"units": [("UNITS", "first"), ("LONG_NAMES", "first"), "UNIT_LOOP_WORDS"],
 	# soft keywords (P165) and the contextual words of events, tasks, reflection, list phrases, declarations and the
 	# server; last, so it keeps only the words no other scope has (`sort` and `first` stay built-ins)
 	"keyword_soft": [
-		("src/lowering/soft_keywords.rs", "SOFT_KEYWORDS"), ("src/lowering/soft_keywords.rs", "HIGHLIGHTED_WORDS"),
-		("src/lowering/event_signals.rs", "EMIT_ALIASES"), ("src/lowering/event_signals.rs", "ON_WORD"),
-		("src/lowering/variable_signals.rs", "BEFORE_WORD"), ("src/lowering/variable_signals.rs", "WHENEVER_WORD"),
-		("src/lowering/declarations.rs", "FINISH_EVENT"),
-		("src/lowering/declarations.rs", "WITHIN_WORD"), ("src/lowering/declarations.rs", "EXTENSION_WORD"),
-		("src/lowering/reflection.rs", "FIELDS_WORDS"), ("src/lowering/reflection.rs", "METHODS_WORD"),
-		("src/lowering/reflection.rs", "PARAMS_WORDS"), ("src/lowering/reflection.rs", "SIGNATURE_WORD"),
-		("src/lowering/reflection.rs", "EXPORTS_WORD"), ("src/lowering/list_phrases.rs", "WHERE_WORD"),
-		("src/lowering/list_phrases.rs", "KEEP"), ("src/warp_parser/mod.rs", "EACH_WORD"),
-		("src/warp_parser/mod.rs", "EXTENDS_KEYWORD"), ("src/warp_parser/mod.rs", "IMPLEMENTS_WORD"),
-		("src/warp_parser/mod.rs", "MIXIN_WORD"), ("src/warp_parser/mod.rs", "OPERATOR_KINDS", "first"),
-		("src/warp_parser/mod.rs", "PRECEDENCE_DIRECTIONS", "first"), ("src/law.rs", "LAW_KEYWORD"),
-		("src/lowering/references.rs", "REFERENCE_WORD"), ("src/lowering/serve.rs", "SERVE_WORD"),
-		("src/lowering/serve.rs", "SERVER_WORD"), ("src/lowering/routes.rs", "ROUTE_WORD"),
-		("src/lowering/serve.rs", "DATABASE_WORDS"),
-		*[("page", section) for section in ("Declarations", "Phrases on lists", "Events and signals", "Tasks",
+		"SOFT_KEYWORDS", "HIGHLIGHTED_WORDS", "EMIT_ALIASES", "ON_WORD", "BEFORE_WORD", "WHENEVER_WORD",
+		"FINISH_EVENT", "WITHIN_WORD", "EXTENSION_WORD", "FIELDS_WORDS", "METHODS_WORD",
+		"PARAMS_WORDS", "SIGNATURE_WORD", "EXPORTS_WORD", "WHERE_KEYWORD", "EACH_WORD",
+		"EXTENDS_KEYWORD", "IMPLEMENTS_WORD", "MIXIN_WORD", ("OPERATOR_KINDS", "first"),
+		("PRECEDENCE_DIRECTIONS", "first"), "LAW_KEYWORD", "REFERENCE_WORD", "SERVE_WORD",
+		"SERVER_WORD", "ROUTE_WORD", "DATABASE_WORDS",
+		*[("page", section) for section in ("Declarations", "Lists", "Events and signals", "Tasks",
 		                                    "Reflection", "Server and database", "Modules")],
 	],
 }
-PAGE_SOURCES = [source for sources in SOURCES.values() for source in sources if source[0] == "page"]
+PAGE_SOURCES = [source for sources in SOURCES.values() for source in sources if isinstance(source, tuple) and source[0] == "page"]
 # P165's two lists: each of their words must land in some scope
-P165_LISTS = [("src/lowering/soft_keywords.rs", "HARD_KEYWORDS"), ("src/lowering/soft_keywords.rs", "SOFT_KEYWORDS")]
+P165_LISTS = ["HARD_KEYWORDS", "SOFT_KEYWORDS"]
 # the scopes of keywords proper, each word of which wiki/keyword.md documents (types, built-ins and units have pages of their own)
 DOCUMENTED_SCOPES = ["constant_language", "variable_language", "keyword_control", "keyword_function", "keyword_declaration",
                      "keyword_import", "storage_modifier", "keyword_operator_word", "keyword_soft"]
@@ -144,7 +121,7 @@ MERGED_INTO = "support_function"
 STRING_OR_COMMENT = re.compile(r'"(?:[^"\\]|\\.)*"|//[^\n]*|/\*.*?\*/|\'(?:[^\'\\]|\\.)\'', re.S)
 CONST_HEAD = re.compile(r"\b(?:const|static)\s+([A-Z][A-Z0-9_]*)\s*:(?:\[(?:[^\[\]]|\[[^\]]*\])*\]|[^=;])*=")
 STRING = re.compile(r'"((?:[^"\\]|\\.)*)"|\'((?:[^\'\\]|\\.))\'')
-IDENTIFIER_PATH = re.compile(r"(?:[a-z_][a-z0-9_]*::)*([A-Z][A-Z0-9_]+)(?:\[(\d+)\])?")
+IDENTIFIER_PATH = re.compile(r"(?:[a-z_][a-z0-9_]*::)*?(?:([a-z_][a-z0-9_]*)::)?([A-Z][A-Z0-9_]+)(?:\[(\d+)\])?")
 
 
 def without_comments(code):
@@ -202,17 +179,32 @@ class RustSources:
 		self.files = {path.relative_to(warp).as_posix(): without_comments(path.read_text())
 		              for root in RUST_ROOTS for path in warp.glob(f"{root}/**/*.rs")}
 		self.constants = {}  # (file, name) → initializer
+		self.warned = set()
 		for file, code in self.files.items():
 			for head in CONST_HEAD.finditer(code):
 				self.constants[(file, head.group(1))] = code[head.end():balanced_end(code, head.end())]
 
-	def initializer(self, file, name):
-		if (file, name) in self.constants:
-			return self.constants[(file, name)]
-		elsewhere = [key for key in self.constants if key[1] == name]
-		if len(elsewhere) == 1:
-			return self.constants[elsewhere[0]]
-		raise KeyError(f"warp has no constant {name} in {file} (found in {[key[0] for key in elsewhere]})")
+	def function_bodies(self, name):
+		"""(file, body) of every `fn name` under the Rust roots"""
+		return [(file, code[head.end():balanced_end(code, head.end(), "}")])
+		        for file, code in self.files.items() for head in re.finditer(rf"\bfn\s+{name}\b[^{{;]*\{{", code)]
+
+	@staticmethod
+	def the_one(kind, qualified, definitions):
+		"""The (file, code) definition of a `module::name`: loud when there is none or several that differ"""
+		*modules, name = qualified.split("::")
+		found = [(file, code) for file, code in definitions(name)
+		         if all(module in re.split(r"[/.]", file) for module in modules)]
+		if not found:
+			raise KeyError(f"warp has no {kind} {qualified} under {RUST_ROOTS}: renamed? update SOURCES")
+		if len({code for _, code in found}) > 1:
+			raise KeyError(f"warp has several {kind}s {qualified}, in {[file for file, _ in found]}: "
+			               f"qualify it in SOURCES with a folder or file name (`folder::{name}`)")
+		return found[0]
+
+	def initializer(self, qualified):
+		return self.the_one("constant", qualified,
+		                    lambda name: [(file, code) for (file, found), code in self.constants.items() if found == name])
 
 	def strings(self, expression, file):
 		"""String literals of an expression, constants it names resolved (`NAME`, `module::NAME`, `NAME[2]`)"""
@@ -225,37 +217,43 @@ class RustSources:
 				words.append(string.group(1) if string.group(1) is not None else string.group(2))
 				position = string.end()
 			elif identifier and (position == 0 or not expression[position - 1].isalnum()):
-				words += self.resolved(identifier.group(1), identifier.group(2), file)
+				words += self.resolved(identifier.group(1), identifier.group(2), identifier.group(3), file)
 				position = identifier.end()
 			else:
 				position += 1
 		return words
 
-	def resolved(self, name, index, file):
-		try:
-			initializer = self.initializer(file, name)
-		except KeyError:
-			return []  # an enum variant or a type, not a word
-		values = self.strings(initializer, file)
+	def resolved(self, module, name, index, file):
+		"""A constant named inside another: by its module path, else the one of the same file, else the one its `use`
+		names, else the only one of that name"""
+		imported = re.search(rf"\buse\s+(?:[\w:]*::)?(\w+)::(?:\{{[^}}]*\b{name}\b|{name}\b)", self.files[file])
+		module = module if module not in (None, "crate", "self", "super") else imported and imported.group(1)
+		if (file, name) in self.constants and not module:
+			found = file, self.constants[(file, name)]
+		else:
+			try:
+				found = self.initializer(f"{module}::{name}" if module else name)
+			except KeyError as error:
+				if "several" in str(error) and error.args[0] not in self.warned:
+					self.warned.add(error.args[0])
+					print(f"warning: {error.args[0]}, left out where {file} names it", file=sys.stderr)
+				return []  # an enum variant or a type, not a word
+		values = self.strings(found[1], found[0])
 		return values[int(index):int(index) + 1] if index is not None else values
 
-	def constant_words(self, file, name, mode=None):
-		initializer = self.initializer(file, name)
+	def constant_words(self, name, mode=None):
+		file, initializer = self.initializer(name)
 		if mode in ("first", "rest"):
 			elements = [self.strings(element, file) for element in top_level_elements(initializer)]
 			return [word for found in elements for word in (found[:1] if mode == "first" else found[1:])]
 		return self.strings(initializer, file)
 
-	def function_words(self, file, function):
-		code = self.files[file]
-		head = re.search(rf"\bfn\s+{function}\b[^{{]*\{{", code)
-		if not head:
-			raise KeyError(f"warp has no function {function} in {file}")
-		return self.strings(code[head.end():balanced_end(code, head.end(), "}")], file)
+	def function_words(self, qualified):
+		return self.strings(*reversed(self.the_one("function", qualified, self.function_bodies)))
 
-	def call_arguments(self, directory, function):
+	def call_arguments(self, function):
 		calls = re.compile(rf"\b{function}\(\s*([A-Za-z_:\"][^()]*)\)")
-		return [word for file, code in self.files.items() if file.startswith(directory)
+		return [word for file, code in self.files.items()
 		        for argument in calls.findall(code) for word in self.strings(argument, file)]
 
 	def has_literal(self, word):
@@ -273,14 +271,17 @@ def page_words(section):
 	return [word.strip("`") for cells in rows for cell in cells for word in re.split(r"[\s,]+", cell) if word.strip("`…")]
 
 
+@functools.cache  # checked once for unfound names, then collected
 def source_words(rust, source):
+	if isinstance(source, str):
+		return rust.constant_words(source)
 	kind = source[0]
 	if kind == "page":
 		return page_words(source[1])
 	if kind == "fn":
-		return rust.function_words(source[1], source[2])
+		return rust.function_words(source[1])
 	if kind == "calls":
-		return rust.call_arguments(source[1], source[2])
+		return rust.call_arguments(source[1])
 	if kind == "words":
 		missing = [word for word in source[1:] if not rust.has_literal(word)]
 		if missing:
@@ -311,11 +312,30 @@ def longest_first(found):
 	return sorted(found, key=lambda token: (-len(token), token))
 
 
+def is_call_source(source):
+	return isinstance(source, tuple) and source[0] == "calls"
+
+
+def unfound_sources(rust):
+	"""Every source warp no longer defines, with the reason: all of them at once, not just the first"""
+	problems = []
+	for source in (source for sources in SOURCES.values() for source in sources):
+		try:
+			source_words(rust, source)
+		except KeyError as error:
+			problems.append(error.args[0])
+	return problems
+
+
 def collect_words(rust):
 	corpus = usage_corpus()
 	taken, words = {}, {}  # word → the scope that has it
+	# a parser call matches any keyword (`print`, `each`): its words count only where no table of a scope names them
+	tabled = {token for sources in SOURCES.values() for source in sources if not is_call_source(source)
+	          for token in source_words(rust, source)}
 	for scope in SCOPE_ORDER:
-		tokens = {token for source in SOURCES[scope] for token in source_words(rust, source)}
+		tokens = {token for source in SOURCES[scope] for token in source_words(rust, source)
+		          if not (is_call_source(source) and token in tabled)}
 		free = lambda token: token not in taken or taken[token] in SHARED_WORDS.get(scope, ())
 		found = {word for word in tokens if WORD.match(word) and word not in EXCLUDED and free(word)}
 		if scope == CALL_CHECKED:
@@ -335,7 +355,7 @@ def collect_words(rust):
 
 def uncolored_keywords(rust, words):
 	colored = {word for found in words.values() for word in found}
-	return sorted({word for source in P165_LISTS for word in rust.constant_words(*source)} - colored)
+	return sorted({word for source in P165_LISTS for word in rust.constant_words(source)} - colored)
 
 
 def undocumented_keywords(words):
@@ -376,6 +396,9 @@ def write_completions(words):
 
 if __name__ == "__main__":
 	rust_sources = RustSources(WARP)
+	unfound = unfound_sources(rust_sources)
+	if unfound:
+		sys.exit("error: SOURCES names what warp no longer has:\n  " + "\n  ".join(unfound))
 	found_words = collect_words(rust_sources)
 	rewrite_syntax(found_words)
 	write_completions(found_words)

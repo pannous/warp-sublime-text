@@ -14,7 +14,7 @@ The word lists are generated from warp's sources (~/dev/angles/warp), never edit
     scripts/update_words.py [path to warp]   # rewrites the GENERATED variables and Warp.sublime-completions
     scripts/check_syntax.py                  # YAML, regexes, completions JSON and syntax_test_warp.warp, headless
 
-`update_words.py` fails when a hard or soft keyword (warp's src/lowering/soft_keywords.rs) gets no scope, when a
+`update_words.py` fails when a hard or soft keyword (warp's SOFT_KEYWORDS and HARD_KEYWORDS, found by name under src/) gets no scope, when a
 keyword is missing from warp's wiki/keyword.md, the page that documents them all, or when a word of that page's tables
 gets no scope (contextual words warp matches inline are read from the page itself; articles `a`, `an`, `the` stay plain).
 
