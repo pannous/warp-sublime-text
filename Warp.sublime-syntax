@@ -214,6 +214,12 @@ contexts:
   # entity.name.function / entity.name.type feed Sublime's symbol index, so F12 (goto_definition) finds them
 
   definitions:
+    - match: '{{word_start}}(enum)\s+({{identifier}})\s*(\{)'
+      captures:
+        1: keyword.declaration.warp
+        2: entity.name.type.warp
+        3: punctuation.section.block.begin.warp
+      push: enum_body
     - match: '{{word_start}}((?:{{keyword_function}}))\s+({{identifier}})'
       captures:
         1: keyword.declaration.function.warp
@@ -231,6 +237,20 @@ contexts:
     - match: '(?:^|(?<=[:=(,\[{]))\s*(?!(?:{{keyword_control}}|{{keyword_function}}|{{keyword_declaration}}|{{storage_modifier}}){{word_end}})({{identifier}})(?=\s*\{)'
       captures:
         1: entity.name.tag.warp
+
+  # enum cases, one a line or comma-separated, each maybe with a payload `Number(value: number)`: each case name is
+  # a definition (Symbols.tmPreferences indexes entity.name.constant.enum-case for F12)
+  enum_body:
+    - meta_scope: meta.block.enum.warp
+    - match: '\}'
+      scope: punctuation.section.block.end.warp
+      pop: true
+    - include: comments
+    - include: groups
+    - match: '{{identifier}}'
+      scope: entity.name.constant.enum-case.warp
+    - match: ','
+      scope: punctuation.separator.warp
 
   # keys: `name: "Alice"`, not `::` or `:=`, not control words (`else: …`)
   keys:

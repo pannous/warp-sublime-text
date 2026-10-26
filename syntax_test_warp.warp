@@ -272,3 +272,26 @@ extended_sum(a: Node, b: Node): Node from runtime
 
 Key(name, Op.Colon, value): { if name then Key(name) else item }
 # <- - entity.name.function
+
+enum Shape {
+#    ^^^^^ entity.name.type.warp
+    Empty
+#   ^^^^^ entity.name.constant.enum-case.warp
+    Circle(radius: float)
+#   ^^^^^^ entity.name.constant.enum-case.warp
+#          ^^^^^^ - entity.name.constant
+    // a comment
+#      ^ comment.line.warp - entity.name.constant
+    Add, Sub, If
+#   ^^^ entity.name.constant.enum-case.warp
+#        ^^^ entity.name.constant.enum-case.warp
+#             ^^ entity.name.constant.enum-case.warp
+}
+#<- punctuation.section.block.end.warp
+after = Add
+#       ^^^ - entity.name.constant
+
+enum Pair { At(moment: Moment), Lasting(span: Span) }
+#           ^^ entity.name.constant.enum-case.warp
+#                               ^^^^^^^ entity.name.constant.enum-case.warp
+#                                                   ^ punctuation.section.block.end.warp
