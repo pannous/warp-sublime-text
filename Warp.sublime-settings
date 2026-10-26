@@ -3,7 +3,7 @@
 	"color_scheme": "auto",
 	"light_color_scheme": "Warp Day.sublime-color-scheme",
 	"dark_color_scheme": "Warp Night.sublime-color-scheme",
-	// Latin letters lighter and more open than the Helvetica Neue that macOS falls back to; signs the font lacks
-	// (Indus script and other symbols) still fall back to the fonts that have them
-	"font_face": "Avenir Next",
+	// the Helvetica Neue that macOS falls back to, one weight lighter (Avenir Next was too far off); signs the font
+	// lacks (Indus script and other symbols) still fall back to the fonts that have them
+	"font_face": "Helvetica Neue Light",
 }
