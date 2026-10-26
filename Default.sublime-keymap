@@ -1,0 +1,6 @@
+[
+	// in warp files the web search key (super+alt+d, Search Anywhere elsewhere) goes to the definition like F12
+	{ "keys": ["super+alt+d"], "command": "goto_definition", "context": [
+		{ "key": "selector", "operator": "equal", "operand": "source.warp" }
+	]},
+]
