@@ -3,7 +3,9 @@
 	"color_scheme": "auto",
 	"light_color_scheme": "Warp Day.sublime-color-scheme",
 	"dark_color_scheme": "Warp Night.sublime-color-scheme",
-	// the Helvetica Neue that macOS falls back to, one weight lighter (Avenir Next was too far off); signs the font
-	// lacks (Indus script and other symbols) still fall back to the fonts that have them
-	"font_face": "Helvetica Neue Light",
+	// the font stays the user's (its Latin letters fall back to Helvetica Neue, which has no weight between Regular and
+	// Light, both tried); airier instead: unrounded glyph widths (macOS) and more room between lines
+	"font_options": ["no_round"],
+	"line_padding_top": 3,
+	"line_padding_bottom": 3,
 }
