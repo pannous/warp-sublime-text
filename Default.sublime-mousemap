@@ -1,0 +1,9 @@
+[
+	// middle click: the default column select, then in warp files the definition under the click (warp_definition_click.py)
+	{
+		"button": "button3",
+		"press_command": "drag_select",
+		"press_args": {"by": "columns"},
+		"command": "warp_definition_click"
+	},
+]
