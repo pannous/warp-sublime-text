@@ -1,0 +1,6 @@
+{
+	// warp files: white by day, very dark blue by night (follows the system appearance; schemes built by warp_backgrounds.py)
+	"color_scheme": "auto",
+	"light_color_scheme": "Warp Day.sublime-color-scheme",
+	"dark_color_scheme": "Warp Night.sublime-color-scheme",
+}
