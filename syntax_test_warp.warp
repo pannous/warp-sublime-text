@@ -247,3 +247,28 @@ on change x { print old; signal ping }
 ok = ⊤ and not ❌
 #    ^ constant.language.warp
 #              ^ constant.language.warp
+
+enum Node { Empty }
+# <- keyword.declaration.warp
+#    ^^^^ entity.name.type.warp
+
+type Name = text
+# <- keyword.declaration.warp
+#    ^^^^ entity.name.type.warp
+
+x = type value
+#   ^^^^ support.function
+#        ^^^^^ - entity.name.type
+
+try_name(role: text, number: int): Node := fresh_name("try·" + role, number)
+# <- entity.name.function.warp
+#                                  ^^^^ - entity.name
+
+items(xs: list<Node>, f: (int)->int): [Node]? := xs
+# <- entity.name.function.warp
+
+extended_sum(a: Node, b: Node): Node from runtime
+# <- entity.name.function.warp
+
+Key(name, Op.Colon, value): { if name then Key(name) else item }
+# <- - entity.name.function
