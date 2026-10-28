@@ -28,7 +28,7 @@ variables:
   constant_language: (?:nothing|empty|euler|false|nada|nill|none|null|true|void|nil|nix|nul|tau|yes|no|pi)
   constant_language_glyphs: (?:☑️|✓️|✔️|ø|ε|π|τ|ω|ℯ|ⅈ|∞|⊤|⊥|☑|✅|✓|✔|✗|❌|🗸|🗹)
   variable_language: (?:previous|result|event|super|value|self|this|old|was|it)
-  keyword_control: (?:continue|default|finally|warning|assert|elseif|except|return|switch|unless|await|break|catch|check|elsif|match|other|panic|raise|throw|times|until|while|yield|case|elif|else|fail|loop|once|then|warn|with|end|for|try|do|go|if|in)
+  keyword_control: (?:continue|default|finally|warning|assert|elseif|except|return|switch|unless|await|break|catch|check|test|elsif|match|other|panic|raise|throw|times|until|while|yield|case|elif|else|fail|loop|once|then|warn|with|end|for|try|do|go|if|in)
   keyword_function: (?:function|define|func|def|fun|fn)
   keyword_declaration: (?:capability|interface|prototype|typeclass|protocol|feature|aspect|record|struct|class|trait|data|enum)
   keyword_import: (?:include|require|import|use)
