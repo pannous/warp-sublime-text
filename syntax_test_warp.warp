@@ -30,6 +30,16 @@ z = [1, 2] # a hash comment after code, as warp's parser reads it
 	# an indented hash comment
 #^ comment.line.warp punctuation.definition.comment.warp
 
+// todo highlight to do, TODO: and FIXME but not todos
+#  ^^^^ comment.line.warp keyword.other.todo.warp
+#                 ^^^^^ - keyword.other.todo
+#                        ^^^^ keyword.other.todo.warp
+#                                  ^^^^^ keyword.other.todo.warp
+#                                                ^^^^^ - keyword.other.todo
+
+/* TODO in a block */
+#  ^^^^ comment.block.warp keyword.other.todo.warp
+
 url = "http://wasp.pannous.com"
 #     ^^^^^^^^^^^^^^^^^^^^^^^^^ string.quoted.double.warp - comment
 

@@ -4,6 +4,8 @@
 	"rules": [
 		{"name": "warp soft keyword", "scope": "keyword.other.soft.warp", "foreground": "hsl(300, 40%, 52%)"},
 		// `:` `,` `.` between every pair of words: quiet grey instead of a row of bright spikes
-		{"name": "warp separators", "scope": "source.warp punctuation.separator, source.warp punctuation.accessor", "foreground": "hsl(0, 0%, 52%)"}
+		{"name": "warp separators", "scope": "source.warp punctuation.separator, source.warp punctuation.accessor", "foreground": "hsl(0, 0%, 52%)"},
+		// todo and fixme in comments stand out of the grey
+		{"name": "warp todo", "scope": "keyword.other.todo.warp", "foreground": "hsl(28, 100%, 42%)", "font_style": "bold"}
 	]
 }

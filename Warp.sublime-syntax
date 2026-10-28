@@ -81,6 +81,7 @@ contexts:
     - meta_scope: comment.line.warp
     - match: '$\n?'
       pop: true
+    - include: todo
 
   star_block_comment:
     - meta_scope: comment.block.warp
@@ -89,6 +90,7 @@ contexts:
       pop: true
     - match: '/\*'
       push: star_block_comment
+    - include: todo
 
   hash_block_comment:
     - meta_scope: comment.block.warp
@@ -97,6 +99,12 @@ contexts:
       pop: true
     - match: '/#'
       push: hash_block_comment
+    - include: todo
+
+  # `todo` and `fixme` in any case, colored by the scheme overlays
+  todo:
+    - match: '\b(?i:todo|fixme)\b'
+      scope: keyword.other.todo.warp
 
   ##############################################################################
   # strings: "…" interpolates (`${expr}`, `$(expr)`, `\(expr)`; a bare `$name` stays text, decision P6), '…' does not; both escape (`\n`, `\u{e9}`, `\:alpha`);

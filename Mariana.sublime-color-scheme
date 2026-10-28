@@ -2,6 +2,8 @@
 	// merged into the user's Mariana scheme (Sublime Text 4 combines color schemes of the same name):
 	// warp's soft and contextual keywords in a lighter tone of the keyword color
 	"rules": [
-		{"name": "warp soft keyword", "scope": "keyword.other.soft.warp", "foreground": "hsl(300, 22%, 82%)"}
+		{"name": "warp soft keyword", "scope": "keyword.other.soft.warp", "foreground": "hsl(300, 22%, 82%)"},
+		// todo and fixme in comments stand out of the grey
+		{"name": "warp todo", "scope": "keyword.other.todo.warp", "foreground": "hsl(28, 100%, 62%)", "font_style": "bold"}
 	]
 }
