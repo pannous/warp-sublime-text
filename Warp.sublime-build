@@ -1,8 +1,8 @@
 {
-	// warp says a failure as "<file>:<line>:<column>: <message>", as compilers do
+	// warp says a failure as "<file>:<line>:<column> <message>"
 	"cmd": ["warp", "$file_name"],
 	"working_dir": "$file_path",
 	"path": "$HOME/dev/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
 	"selector": "source.warp",
-	"file_regex": "^([^\\s:]+\\.warp):(\\d+):(\\d+): (.*)$"
+	"file_regex": "^([^\\s:]+\\.warp):(\\d+):(\\d+):? (.*)$"
 }
