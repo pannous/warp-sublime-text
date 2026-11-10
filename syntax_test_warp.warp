@@ -175,6 +175,13 @@ Person {
 #   ^^^^ entity.name.key.warp
 #       ^ punctuation.separator.key-value.warp
     age: 30
+    red-hair: "\u{200D}🦰"
+#   ^^^^^^^^ entity.name.key.warp
+#           ^ punctuation.separator.key-value.warp
+    *one-way: 1
+#   ^^^^^^^^ entity.name.key.warp
+    for-each: 2
+#   ^^^^^^^^ entity.name.key.warp
     hobbies: [ "reading", 'hiking' ]
 #                         ^^^^^^^^ string.quoted.single.warp
 }
@@ -305,3 +312,9 @@ enum Pair { At(moment: Moment), Lasting(span: Span) }
 #           ^^ entity.name.constant.enum-case.warp
 #                               ^^^^^^^ entity.name.constant.enum-case.warp
 #                                                   ^ punctuation.section.block.end.warp
+
+difference = x-1 - a-b
+#            ^ - entity.name.key
+#             ^ keyword.operator.arithmetic.warp
+#                   ^ keyword.operator.arithmetic.warp
+#                    ^ - entity.name.key

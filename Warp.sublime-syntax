@@ -16,6 +16,8 @@ scope: source.warp
 
 variables:
   identifier: '[A-Za-z_][A-Za-z0-9_]*'
+  # a key may be kebab-case and starred: `red-hair:`, `*one-way:`; a part after `-` starts with a letter, so `x-1` stays a subtraction
+  key_name: '\*?{{identifier}}(?:-[A-Za-z_][A-Za-z0-9_]*)*'
   # `-` ends a word: `a-1` is a subtraction
   word_end: '(?![A-Za-z0-9_])'
   word_start: '(?<![A-Za-z0-9_$@&])'
@@ -260,9 +262,9 @@ contexts:
     - match: ','
       scope: punctuation.separator.warp
 
-  # keys: `name: "Alice"`, not `::` or `:=`, not control words (`else: …`)
+  # keys: `name: "Alice"`, `red-hair: "…"`, not `::` or `:=`, not control words (`else: …`, but `for-each:` is a key)
   keys:
-    - match: '{{word_start}}(?!(?:{{keyword_control}}){{word_end}})({{identifier}})\s*(:)(?![:=])'
+    - match: '{{word_start}}(?!(?:{{keyword_control}})\s*:)({{key_name}})\s*(:)(?![:=])'
       captures:
         1: entity.name.key.warp
         2: punctuation.separator.key-value.warp
