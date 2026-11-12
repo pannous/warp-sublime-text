@@ -1,0 +1,7 @@
+{
+	// the warp binary and the server it runs, scripts/lsp.warp of the warp repository; override both in
+	// Packages/User/LSP-warp.sublime-settings when they live elsewhere
+	"command": ["$home/dev/bin/warp", "--no-window", "$home/dev/angles/warp/scripts/lsp.warp"],
+	"selector": "source.warp",
+	"enabled": true
+}
