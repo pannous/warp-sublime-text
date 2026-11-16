@@ -318,3 +318,21 @@ difference = x-1 - a-b
 #             ^ keyword.operator.arithmetic.warp
 #                   ^ keyword.operator.arithmetic.warp
 #                    ^ - entity.name.key
+
+// paths without quotes are strings: ./ ../ ~/ / ^/ •/ @/ ://, not division
+img = load ./evening.bmp
+#          ^^^^^^^^^^^^^ string.unquoted.path.warp
+cat ~/notes.txt ../up/a.wav /etc/hosts
+#   ^^^^^^^^^^^ string.unquoted.path.warp
+#               ^^^^^^^^^^^ string.unquoted.path.warp
+#                           ^^^^^^^^^^ string.unquoted.path.warp
+ls ~/
+#  ^^ string.unquoted.path.warp
+x = f(./a, ^/b, •/c, @/d, ://e)
+#     ^^^ string.unquoted.path.warp
+#          ^^^ string.unquoted.path.warp
+#               ^^^ string.unquoted.path.warp
+#                    ^^^ string.unquoted.path.warp
+#                         ^^^^ string.unquoted.path.warp
+half = a / b + xs./2 + c/d + xs ./ 2
+#      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - string

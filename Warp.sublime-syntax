@@ -21,6 +21,8 @@ variables:
   # `-` ends a word: `a-1` is a subtraction
   word_end: '(?![A-Za-z0-9_])'
   word_start: '(?<![A-Za-z0-9_$@&])'
+  # a path runs until a space, a quote, a bracket or a separator
+  path_chars: '[^\s"''()\[\]{},;]'
   # a definition's head after its name: `(a: int, f: (int)->int)`, a return type `: list<Node>`, then `:=` or `from`
   parameters: '\((?:[^()]|\([^()]*\))*\)'
   return_type: ':\s*[A-Za-z_\[][\w<>\[\]?|., ]*?'
@@ -50,6 +52,7 @@ contexts:
 
   statements:
     - include: comments
+    - include: paths
     - include: strings
     - include: numbers
     - include: groups
@@ -107,6 +110,15 @@ contexts:
   todo:
     - match: '\b(?i:todo|fixme)\b'
       scope: keyword.other.todo.warp
+
+  ##############################################################################
+  # paths without quotes, values of type path (wiki/script.md): `./x`, `../x`, `~/x`, `/etc/x`, `^/x` beside the source,
+  # `•/x` or `@/x` project root, `://x` server root; only where no operand stands before (line start, space, `(`, `[`,
+  # `,`, `=`) and with a word after the slash, so `xs./2`, `a/b` and `a / b` divide; colored as strings
+
+  paths:
+    - match: '(?<![^\s(\[{,=])(?:(?:\.\.?|~|\^|•|@|:/)?/(?=[\w.~])|~/?(?=[\s)\]},;]|$)){{path_chars}}*'
+      scope: string.unquoted.path.warp
 
   ##############################################################################
   # strings: "…" interpolates (`${expr}`, `$(expr)`, `\(expr)`; a bare `$name` stays text, decision P6), '…' does not; both escape (`\n`, `\u{e9}`, `\:alpha`);
