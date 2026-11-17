@@ -11,6 +11,7 @@ file_extensions:
   - angle
   - wasp
   - warp
+  - wap
 first_line_match: ^#!.*\b(wasp|warp)\b
 scope: source.warp
 

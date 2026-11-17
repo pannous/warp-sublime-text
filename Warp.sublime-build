@@ -4,5 +4,5 @@
 	"working_dir": "$file_path",
 	"path": "$HOME/dev/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
 	"selector": "source.warp",
-	"file_regex": "^([^\\s:]+\\.warp):(\\d+):(\\d+):? (.*)$"
+	"file_regex": "^([^\\s:]+\\.(?:warp|wap)):(\\d+):(\\d+):? (.*)$"
 }
